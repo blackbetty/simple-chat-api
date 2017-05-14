@@ -1,0 +1,28 @@
+{
+  "name": "chat-api",
+  "version": "1.0.0",
+  "description": "A very basic api and backend for a small, simple chat service",
+  "main": "app.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "/Users/Dan/Desktop/CodeProjects/chat-api/.git/"
+  },
+  "keywords": [
+    "chat",
+    "node",
+    "api",
+    "test",
+    "example"
+  ],
+  "author": "Dan Golant",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.2"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0"
+  }
+}
