@@ -4,7 +4,8 @@
   "description": "A very basic api and backend for a small, simple chat service",
   "main": "app.js",
   "scripts": {
-    "test": "test"
+    "start": "nodemon app.js",
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -20,9 +21,17 @@
   "author": "Dan Golant",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.15.2"
+    "dotenv": "^4.0.0",
+    "express": "^4.15.2",
+    "fs-extra": "^3.0.1",
+    "pg": "^6.2.2",
+    "pg-hstore": "^2.3.2",
+    "sequelize": "^3.30.4"
   },
   "devDependencies": {
-    "eslint": "^3.19.0"
+    "eslint": "^3.19.0",
+    "expect": "^1.20.2",
+    "mocha": "^3.4.1",
+    "supertest": "^3.0.0"
   }
 }

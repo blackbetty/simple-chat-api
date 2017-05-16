@@ -1,21 +1,30 @@
-var express = require('express')
-var app = express()
+var express = require('express');
+var app = express();
 
 
-
+var responseBuilder = require('./response-builder');
 
 
 // Route definitions
-app.get('/', function (req, res) {
-  res.send('Hello World!')
+app.get('/', function(req, res) {
+	var routes = app._router.stack
+  		.filter(r => r.route)
+  		.map(r => r.route.path);
+    res.send(routes.join('<br>'));
+})
+
+app.get('/users', function(req, res) {
+    var userList = responseBuilder.getUsers();
+    res.json(userList);
 })
 
 
-app.listen(3000, function () {
-  console.log('Example app listening on port 3000!')
+var server = app.listen(process.argv[2] || 3000, function() {
+    var port = server.address().port;
+    console.log('chat api listening on port ' + port);
 })
 
-
+module.exports = server;
 
 
 
@@ -43,3 +52,4 @@ app.listen(3000, function () {
 //		Given that, I am allowed (limitedly) to use a sub-optimal solution in some places (This is mostly for my storage solution vis-a-vis individual messages).
 // > These chats only necessarily *need to be* 1:1 between people, but should be built in an extensible way
 // > Threads don't need to have a subject necessarily
+// > Clients shouldn't need to poll, new events should emit
