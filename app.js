@@ -14,7 +14,7 @@ app.get('/', function(req, res) {
 })
 
 app.get('/users', function(req, res) {
-    var userList = responseBuilder.getUsers();
+    var userList = responseBuilder.getUserList();
     res.json(userList);
 })
 
@@ -53,3 +53,6 @@ module.exports = server;
 // > These chats only necessarily *need to be* 1:1 between people, but should be built in an extensible way
 // > Threads don't need to have a subject necessarily
 // > Clients shouldn't need to poll, new events should emit
+// Comments:
+// I think I might also implement a "Entire conversation table" where each row is the entire history
+//  	of a thread and store conservations as an gestalt object rather than message by message in order to allow for both quick single message lookup by id/text *and* allow for fetching a conservation completely rather than row by row.
