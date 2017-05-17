@@ -1,8 +1,9 @@
-var express = require('express');
-var app = express();
+const express = require('express');
+const app = express();
 
 
 var responseBuilder = require('./response-builder');
+var dbInterface = require('./db-interface');
 
 
 // Route definitions
@@ -14,7 +15,7 @@ app.get('/', function(req, res) {
 })
 
 app.get('/users', function(req, res) {
-    var userList = responseBuilder.getUserList();
+    // var userList = responseBuilder();
     res.json(userList);
 })
 
