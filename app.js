@@ -245,4 +245,5 @@ module.exports = server;
 //      of a thread and store conservations as an gestalt object rather than message by message in order to allow for both quick single message lookup by id/text *and* allow for fetching a conservation completely rather than row by row.
 // Extra todos:
 //      Validate email.
-//
+//      vALIDATE POSTS to prevent users from starting conversations with themselves
+//      validate POSTS to prevent users from messagin themselves
