@@ -109,7 +109,7 @@ var dbInterface = {
     // it's simpler to keep conversation create and update as separate functions
     createConversation: function(conversationObject, callback) {
         Conversation.upsert({
-            initiating_user_id: conversationObject.username,
+            initiating_user_id: conversationObject.initiatingUserID,
             receiving_user_id: conversationObject.receivingUserID,
             conversation_title: conversationObject.conversationTitle
         }).then(upsertedOrError => {

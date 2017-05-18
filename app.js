@@ -51,7 +51,7 @@ app.get('/users/:id?', function(req, res) {
     } else {
         var users = dbInterface.fetchUsers('user_id', req.params.id, function(returnedUsers) {
             if (!(returnedUsers instanceof Error)) {
-            	console.log(returnedUsers);
+                console.log(returnedUsers);
                 res.json(returnedUsers);
             } else {
                 res.status(400).send('Bad Request');
@@ -78,7 +78,7 @@ app.post('/users/', function(req, res) {
             if (!user.useremail) {
                 errFields.push('useremail');
             }
-            callback({
+            res.status(400).json({
                 Error: 'Please provide values for the following fields:' + errFields,
                 status: 400
             });
@@ -119,9 +119,9 @@ app.get('/users/:userid/conversations/:conversationid?', function(req, res) {
     var conversationID = req.params.conversationid;
     var uID = req.params.userid;
 
-    if((uID && isNaN(uID)) || (conversationID && isNaN(conversationID))){
-    	res.status(400).send('Please be sure both provided IDs are numeric');
-    	return;
+    if ((uID && isNaN(uID)) || (conversationID && isNaN(conversationID))) {
+        res.status(400).send('Please be sure both provided IDs are numeric');
+        return;
     }
     dbInterface.fetchConversationsForUser(uID, conversationID, function(returnedConversations) {
         if (!(returnedConversations instanceof Error)) {
@@ -135,16 +135,19 @@ app.get('/users/:userid/conversations/:conversationid?', function(req, res) {
 // Create a conversation between two users
 app.post('/users/:userid/conversations/', function(req, res) {
 
+    if (!req.body || !req.body.receivingUserID || !req.params.userid) {
+        res.status(400).send('Please provide a userID parameter and a body that includes the receivingUserID');
+        return;
+    }
     var uID = req.params.userid;
     var conversationObject = {
-    	initiatingUserID: req.params.userid,
-    	receivingUserID: req.body.receivingUserID,
-    	conversationTitle: req.body.conversationTitle
+        initiatingUserID: uID,
+        receivingUserID: req.body.receivingUserID,
+        conversationTitle: req.body.conversationTitle
     }
-
-    if(uID && isNaN(uID)){
-    	res.status(400).send('Please be sure the provided userID is numeric');
-    	return;
+    if (uID && isNaN(uID)) {
+        res.status(400).send('Please be sure the provided userID is numeric');
+        return;
     }
     dbInterface.createConversation(conversationObject, function(returnedConversation) {
         if (!(returnedConversation instanceof Error)) {
@@ -164,9 +167,9 @@ app.get('/users/:userid/conversations/:conversationid/messages/:messageid?', fun
     var cID = req.params.conversationid;
     var mID = req.params.messageid ? req.params.messageid : null;
 
-    if((uID && isNaN(uID)) || (cID && isNaN(cID)) || (mID && isNaN(mID))){
-    	res.status(400).send('Please be sure all provided IDs are numeric');
-    	return;
+    if ((uID && isNaN(uID)) || (cID && isNaN(cID)) || (mID && isNaN(mID))) {
+        res.status(400).send('Please be sure all provided IDs are numeric');
+        return;
     }
 
     dbInterface.fetchMessagesForConversation(uID, cID, mID, function(returnedConversations) {
@@ -214,29 +217,32 @@ module.exports = server;
 
 
 // Routes I need:
-//	 Users:
-//		 	X>Get List of all users (maybe add a friend functionality at some point?)
-//		 	X>Get single user by id
-//		 	X>create user
-//		 	X>update user
-//		 	X>delete user
-//		 	Conversations:
-//			 	X>Get List of all threads for a given user
-//			 	X>Get single thread by id
-//			 	X>create thread
-//			 	>update thread (subject, maybe recipients?, etc)...this is extra, do later
-//		 		>delete thread (this would only delete that user's view of the thread, not the thread itself, might be out of scope)
-//				Messages:
-//				 	X>Get all messages in the conversation (chronological)
-//				 	X>get a single message by id
-//				 	>Create a message (must support emoji and other non-latin chars!!)
-//				 	>Delete message from single user's view
+//   Users:
+//          X>Get List of all users (maybe add a friend functionality at some point?)
+//          X>Get single user by id
+//          X>create user
+//          X>update user
+//          X>delete user
+//          Conversations:
+//              X>Get List of all threads for a given user
+//              X>Get single thread by id
+//              X>create thread
+//              >update thread (subject, maybe recipients?, etc)...this is extra, do later
+//              >delete thread (this would only delete that user's view of the thread, not the thread itself, might be out of scope)
+//              Messages:
+//                  X>Get all messages in the conversation (chronological)
+//                  X>get a single message by id
+//                  >Create a message (must support emoji and other non-latin chars!!)
+//                  >Delete message from single user's view
 // Assumptions In Order Of Importance:
 // > This is a POC/Test, it doesn't have to be production-ready, it's more a test of how I think and my coding values.
-//		Given that, I am allowed (limitedly) to use a sub-optimal solution in some places (This is mostly for my storage solution vis-a-vis individual messages).
+//      Given that, I am allowed (limitedly) to use a sub-optimal solution in some places (This is mostly for my storage solution vis-a-vis individual messages).
 // > These chats only necessarily *need to be* 1:1 between people, but should be built in an extensible way
 // > Threads don't need to have a subject necessarily
 // > Clients shouldn't need to poll, new events should emit
 // Comments:
 // I think I might also implement a "Entire conversation table" where each row is the entire history
-//  	of a thread and store conservations as an gestalt object rather than message by message in order to allow for both quick single message lookup by id/text *and* allow for fetching a conservation completely rather than row by row.
+//      of a thread and store conservations as an gestalt object rather than message by message in order to allow for both quick single message lookup by id/text *and* allow for fetching a conservation completely rather than row by row.
+// Extra todos:
+//      Validate email.
+//
