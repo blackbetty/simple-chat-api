@@ -4,7 +4,8 @@
   "description": "A very basic api and backend for a small, simple chat service",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js",
+    "start": "node app.js",
+    "startdev": "nodemon app.js",
     "test": "mocha"
   },
   "repository": {
@@ -33,6 +34,7 @@
     "eslint": "^3.19.0",
     "expect": "^1.20.2",
     "mocha": "^3.4.1",
+    "nodemon": "^1.11.0",
     "supertest": "^3.0.0"
   }
 }

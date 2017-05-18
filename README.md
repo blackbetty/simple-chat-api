@@ -6,7 +6,7 @@ install Postgres and create a database called "chatdb" at port 5432 (or define y
 
 npm install
 
-
+create a user on your postgres database with the name of your current system user (for simplicity, for now)
 
 run `$ node models/database.js`
 
