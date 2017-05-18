@@ -30,6 +30,7 @@ module.exports = function(sequelize, DataTypes) {
       defaultValue: 'timezone(utc'
     }
   }, {
-    tableName: 'messages'
+    tableName: 'messages',
+    timestamps: false
   });
 };

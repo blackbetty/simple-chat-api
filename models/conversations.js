@@ -10,16 +10,15 @@ module.exports = function(sequelize, DataTypes) {
     },
     initiating_user_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     receiving_user_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     created_date: {
       type: DataTypes.TIME,
       allowNull: true,
-      defaultValue: 'timezone(utc'
     },
     modified_date: {
       type: DataTypes.TIME,
@@ -30,6 +29,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     }
   }, {
-    tableName: 'conversations'
+    tableName: 'conversations',
+    timestamps: false
   });
 };
