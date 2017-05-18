@@ -181,6 +181,29 @@ app.get('/users/:userid/conversations/:conversationid/messages/:messageid?', fun
     });
 });
 
+// Create a message between two users
+app.post('/users/:userid/conversations/:conversationid/messages/', function(req, res) {
+
+    var uID = req.params.userid;
+    var cID = req.params.conversationid;
+    var mID = req.params.messageid ? req.params.messageid : null;
+
+    if ((uID && isNaN(uID)) || (cID && isNaN(cID)) || (mID && isNaN(mID))) {
+        res.status(400).send('Please be sure all provided IDs are numeric');
+        return;
+    }
+
+    dbInterface.fetchMessagesForConversation(uID, cID, mID, function(returnedConversations) {
+        if (!(returnedConversations instanceof Error)) {
+            res.json(returnedConversations);
+        } else {
+            res.status(400).send('Bad Request');
+        }
+    });
+});
+
+
+
 // Fetch all messages in a conversation in chronological order
 // app.get('/users/:userid/conversations/:conversationid/messages/:messageid?', function(req, res) {
 
