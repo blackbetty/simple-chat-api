@@ -49,7 +49,7 @@ DELETE <host>:<port>/users/<id>
 
 Conversations:
 
-GET /users/:userid/conversations/:conversationid?
+GET <host>:<port>/users/<userid>/conversations/<conversationid?>
 	Fetches all conversations for the given userID
 	or a specific conversation by ID
 
@@ -62,6 +62,10 @@ POST /users/:userid/conversations/
 	Note: Users cannot have conversations with themselves.
 
 Messages:
+
+GET <host>:<port>/users/<userid>/conversations/<conversationid>/messages/<messageid>
+	Fetches all messages for the given conversationID
+	or fetch a specific message by ID
 
 todo:
 

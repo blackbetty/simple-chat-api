@@ -147,7 +147,14 @@ var dbInterface = {
         if (messageID) {
             criteria['message_id'] = messageID
         }
-        Message.findAll({ where: criteria }).then(conversations => {
+        Message.findAll({ where: Sequelize.and(
+                criteria,
+                Sequelize.or({
+                    sender_id: userID
+                }, {
+                    recipient_id: userID
+                })
+            ) }).then(conversations => {
             callback(conversations);
         });
     },
