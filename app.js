@@ -5,6 +5,7 @@ var bodyParser = require('body-parser');
 var responseBuilder = require('./response-builder');
 var dbInterface = require('./db-interface');
 var listEndpoints = require('express-list-endpoints');
+var emailValidator = require("email-validator");
 
 app.use(bodyParser.json());
 
@@ -18,98 +19,80 @@ app.get('/', function(req, res) {
 app.get('/users/:id?', function(req, res) {
     var uName = req.query.username;
     var uEmail = req.query.useremail;
+    var field = null;
+    var value = null;
 
-    //id not explicitly set
+    // If the id param is not explicitly set,
+    // we set the field and value to an existing query param
+    // or leave them null to fetch all users
     if (!req.params.id) {
         if (uName) {
-            console.log('hit');
-            var users = dbInterface.fetchUsers('user_handle', uName, function(returnedUsers) {
-                if (!(returnedUsers instanceof Error)) {
-                    res.json(returnedUsers);
-                } else {
-                    res.status(400).send('Bad Request');
-                }
-            });
+            field = 'user_handle';
+            value = uName;
         } else if (uEmail) {
-            var users = dbInterface.fetchUsers('user_email', uEmail, function(returnedUsers) {
-                if (!(returnedUsers instanceof Error)) {
-                    res.json(returnedUsers);
-                } else {
-                    res.status(400).send('Bad Request');
-                }
-            });
-        } else {
-            dbInterface.fetchUsers(null, null, function(returnedUsers) {
-                if (!(returnedUsers instanceof Error)) {
-                    res.json(returnedUsers);
-                } else {
-                    res.status(400).send('Bad Request');
-                }
-            });
+            field = 'user_email';
+            value = uEmail;
         }
     } else {
-        var users = dbInterface.fetchUsers('user_id', req.params.id, function(returnedUsers) {
-            if (!(returnedUsers instanceof Error)) {
-                console.log(returnedUsers);
-                res.json(returnedUsers);
-            } else {
-                res.status(400).send('Bad Request');
-            }
-        });
+        field = 'user_id';
+        value = req.params.id;
     }
+
+    dbInterface.fetchUsers(field, value, function(returnedUsers) {
+        if (!(returnedUsers instanceof Error)) {
+            res.json(returnedUsers);
+        } else {
+            res.status(400).send('Bad Request');
+        }
+    });
 
 })
 
 // Creates a user or updates the user for the given username (currently username cannot be updated)
 // Returns the new state of the user
 app.post('/users/', function(req, res) {
-    if (req.body) {
-        var user = req.body;
-        if (user.username && user.useremail) {
-            dbInterface.upsertUser(user, function(returnedUser) {
-                res.json(returnedUser);
-            });
-        } else {
-            var errFields = [];
-            if (!user.username) {
-                errFields.push('username');
-            }
-            if (!user.useremail) {
-                errFields.push('useremail');
-            }
-            res.status(400).json({
-                Error: 'Please provide values for the following fields:' + errFields,
-                status: 400
-            });
-        }
-    } else {
+
+    // The object we'll use to create our user
+    var userObject;
+
+    // a collection of missing fields;
+    var badFields = [];
+
+    // If a POST body is incomplete, we can't proceed.
+    if (!req.body || !req.body.username || !req.body.useremail || !emailValidator.validate(req.body.useremail)) {
+
+        // We let the user know what field they forgot (or if their email is bad)
+        if (!req.body.username) badFields.push('username missing');
+        if (!req.body.useremail) badFields.push('useremail missing');
+        if (!emailValidator.validate(req.body.useremail)) badFields.push('invalid email');
         res.status(400).send({
-            Error: 'Please provide a user object with at least a username, email, and optionally a given name.',
-            status: 400
+            error: 'Please provide a user object with at least a username, email, and optionally a given name.',
+            status: 400,
+            bad_fields: badFields
         });
+        return;
     }
+
+    userObject = req.body;
+
+    dbInterface.upsertUser(userObject, function(returnedUser) {
+        res.json(returnedUser);
+    });
 })
 
 // delete a user by userID
 app.delete('/users/:id(\\d+)/', function(req, res) {
     var uID = req.params.id;
-    if (uID) {
-        dbInterface.deleteUser(uID, function(usersDeleted) {
-            if (usersDeleted > 0) {
-                res.json(usersDeleted + ' user with ID ' + uID + ' was deleted.');
-            } else {
-                res.status(500).send({
-                    Error: 'User deletion failed. Please be sure the provided ID points to a user.',
-                    status: 500
-                });
-            }
-        });
-    } else {
+    if (!req.params || !req.params.id) {
         res.status(400).send({
             Error: 'User deletion can only be performed if a valid User ID is provided',
             status: 400
         });
+        return;
     }
+    dbInterface.deleteUser(uID, function(usersDeleted) {
+        res.json(usersDeleted);
+    });
 });
 
 
@@ -211,15 +194,14 @@ app.post('/users/:userid/conversations/:conversationid/messages/', function(req,
 
         var userIsConversationInitiator = returnedConversation.dataValues.initiating_user_id == uID
         var userIsConversationReceiver = returnedConversation.dataValues.receiving_user_id == uID
-        // We set the receiving_user_id to the other user
-        if(userIsConversationInitiator && userIsConversationReceiver){
+            // We set the receiving_user_id to the other user
+        if (userIsConversationInitiator && userIsConversationReceiver) {
             res.status(400).send('Users cannot send messages to themselves.');
             return;
-        } else if(!userIsConversationInitiator && !userIsConversationReceiver){
+        } else if (!userIsConversationInitiator && !userIsConversationReceiver) {
             res.status(400).send('User must be part of conversation.');
             return;
-        }
-        else if (userIsConversationInitiator) {
+        } else if (userIsConversationInitiator) {
             recipientID = returnedConversation.dataValues.receiving_user_id;
         } else if (userIsConversationReceiver) {
             recipientID = returnedConversation.dataValues.initiating_user_id;

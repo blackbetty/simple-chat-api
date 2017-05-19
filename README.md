@@ -14,6 +14,36 @@ if you've created a db in a different spot you'll need to globally install pg, p
 
 sequelize-auto -o "./models" -d <dbname> -h <host> -u "<user>" -p <port> -x <password> -e postgres
 
+
+
+
+
+Route Calls:
+
+GET <host>:<port>/
+	lists all the available routes and methods
+
+
+GET <host>:<port>/users/
+	returns all users in the database. Queryable with ?username= and useremail?=
+
+GET <host>:<port>/users/<id>
+	returns a single user by ID in an array of length 1 (for consistent formatting)
+
+
+POST <host>:<port>/users/
+	Creates or Updates a user for the given `username`. Currently username cannot be updated (Put method by UserID would solve that).
+	{
+		"username": "Killer Mike",
+		"useremail": "dgolant@gmail.co",
+		"givenName": "Michael Render" << optional
+	}
+	and returns the new record along with whether it was created or updated. Because of a limitation with Sequelize we cannot return the ID.
+
+DELETE <host>:<port>/users/<id>
+	deletes a single user by ID and returns the number of users deleted (which should be 1)
+
+
 todo:
 
 add a unique constraint to the username and user email columns

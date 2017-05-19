@@ -13,6 +13,7 @@ var testDBConnection = function() {
             console.log('Connection has been established successfully.');
         })
         .catch(err => {
+            // If we can't connect, we exit and leave a message
             console.error('Unable to connect to the database:', err);
             console.error('Please make sure that a database server is running at the correct path and you have permissions.');
             process.exit(1);
@@ -33,19 +34,20 @@ var dbInterface = {
         if (parameter) {
             var criteria = {};
             criteria[parameter] = value;
-            try {
-                User.findOne({ where: criteria }).then(user => {
-                    // user = replaceNullResult(user);
-                    callback(user);
+            User.findOne({ where: criteria }).then(user => {
+                // for consistency we return an array despite
+                // this call returning a single record by id
+                var users = [];
+                users.push(user);
+                callback(users);
+            }).catch(function(err) {
+                callback({
+                    Error: 'Database upsert failed with error: ' + err,
+                    status: 500
                 });
-            } catch (e) {
-                console.log('Username lookup failed for the user_name ' + uName + ' with error: ' + e);
-            }
+            });
         } else {
             User.findAll().then(users => {
-
-                // returns the user for the given id or null if not found
-                // users = replaceNullResult(users);
                 callback(users);
             });
         }
@@ -56,18 +58,22 @@ var dbInterface = {
             user_handle: user.username,
             user_email: user.useremail,
             user_given_name: givenName
-        }).then(upsertedOrError => {
-            // if the record is created, upsertedOrError == true, if it's updated upsertedOrError == false
-            // so we just return the new state of the record
-            if (!(upsertedOrError instanceof Error)) {
-                callback(user);
-            } else {
-                callback({
-                    Error: 'Database upsert failed with error: ' + upsertedOrError,
-                    status: 500
-                });
-            }
+        }).then(created => {
 
+            // Because Sequelize ORM returns true for created and false for updated on an upsert
+            // instead of the record's ID, this is about the best way we can indicate
+            // creation vs modification.  I agree, it's not great.
+            if (created) {
+                user['created'] = true;
+            } else {
+                user['update'] = true;
+            }
+            callback(user);
+        }).catch(function(err) {
+            callback({
+                Error: 'User upsert failed with error: ' + err,
+                status: 500
+            });
         });
     },
     deleteUser: function(userID, callback) {
@@ -77,6 +83,11 @@ var dbInterface = {
             }
         }).then(numberOfUsersDeleted => {
             callback(numberOfUsersDeleted);
+        }).catch(function(err) {
+            callback({
+                Error: 'User upsert failed with error: ' + err,
+                status: 500
+            });
         });
     },
     fetchConversationsForUser: function(userID, conversationID, callback) {
