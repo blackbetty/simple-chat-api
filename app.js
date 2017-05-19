@@ -4,15 +4,14 @@ var bodyParser = require('body-parser');
 
 var responseBuilder = require('./response-builder');
 var dbInterface = require('./db-interface');
+var listEndpoints = require('express-list-endpoints');
 
 app.use(bodyParser.json());
 
-// Route definitions
+// Route definitions and methods
 app.get('/', function(req, res) {
-    var routes = app._router.stack
-        .filter(r => r.route)
-        .map(r => r.route.path);
-    res.send(routes.join('<br>'));
+    var endpoints = listEndpoints(app);
+    res.send(endpoints);
 })
 
 //fetch all users, or specify a query of username, userid, or useremail
@@ -160,7 +159,7 @@ app.post('/users/:userid/conversations/', function(req, res) {
 
 
 
-// Create a conversation between two users
+// Fetch message by conversation + message ID, or all messages on the conversation
 app.get('/users/:userid/conversations/:conversationid/messages/:messageid?', function(req, res) {
 
     var uID = req.params.userid;
@@ -184,50 +183,59 @@ app.get('/users/:userid/conversations/:conversationid/messages/:messageid?', fun
 // Create a message between two users
 app.post('/users/:userid/conversations/:conversationid/messages/', function(req, res) {
 
+
     var uID = req.params.userid;
     var cID = req.params.conversationid;
-    var mID = req.params.messageid ? req.params.messageid : null;
+    var messageBody = req.body.messageBody;
+    var senderID;
 
-    if ((uID && isNaN(uID)) || (cID && isNaN(cID)) || (mID && isNaN(mID))) {
+    // All params need to be provided, along with a message
+    if (!uID || !cID || !messageBody) {
+        res.status(400).send('Please be sure to include all query parameters and a message body, and that your encoding is set to JSON.');
+        return;
+    }
+
+    // All params must be numeric
+    if ((uID && isNaN(uID)) || (cID && isNaN(cID))) {
         res.status(400).send('Please be sure all provided IDs are numeric');
         return;
     }
 
-    dbInterface.fetchMessagesForConversation(uID, cID, mID, function(returnedConversations) {
-        if (!(returnedConversations instanceof Error)) {
-            res.json(returnedConversations);
-        } else {
-            res.status(400).send('Bad Request');
+    senderID = uID;
+
+    // fetch the conversation this message will be created for
+    dbInterface.fetchConversationsForUser(uID, cID, function(returnedConversationsCollection) {
+        // The user who will recieve the message
+        var returnedConversation = returnedConversationsCollection[0];
+        var recipientID;
+
+        var userIsConversationInitiator = returnedConversation.dataValues.initiating_user_id == uID
+        var userIsConversationReceiver = returnedConversation.dataValues.receiving_user_id == uID
+        // We set the receiving_user_id to the other user
+        if(userIsConversationInitiator && userIsConversationReceiver){
+            res.status(400).send('Users cannot send messages to themselves.');
+            return;
+        } else if(!userIsConversationInitiator && !userIsConversationReceiver){
+            res.status(400).send('User must be part of conversation.');
+            return;
         }
-    });
+        else if (userIsConversationInitiator) {
+            recipientID = returnedConversation.dataValues.receiving_user_id;
+        } else if (userIsConversationReceiver) {
+            recipientID = returnedConversation.dataValues.initiating_user_id;
+        } else {
+            res.status(400).send('Unknown error');
+            return;
+        }
+        dbInterface.createMessageForConversation(cID, senderID, recipientID, messageBody, function(returnedObject) {
+            if (returnedObject) {
+                res.json(returnedObject);
+            } else {
+                res.status(400).send('Bad Request');
+            }
+        });
+    })
 });
-
-
-
-// Fetch all messages in a conversation in chronological order
-// app.get('/users/:userid/conversations/:conversationid/messages/:messageid?', function(req, res) {
-
-//     // In a more complete scenario we might use the userID for something,
-//     // but in this case I did it in order to keep the route tree consistent
-//     var uID = req.params.userid;
-
-//     var cID = req.params.conversationid;
-//     var mID = req.params.messageid ? req.params.messageid : null;
-
-//     if ((uID && isNaN(uID)) || (cID && isNaN(cID)) || (mID && isNaN(mID))) {
-//         res.status(400).send('Please be sure all provided IDs are numeric');
-//         return;
-//     }
-//     console.log('+++++++++++++++++'+cID);
-//     dbInterface.fetchMessagesForConversation(uID, cID, mID, function(returnedMessages) {
-//         if (!(returnedMessages instanceof Error)) {
-//             res.json(returnedMessages);
-//         } else {
-//             res.status(500).send('Internal error, message lookup failed');
-//         }
-//     });
-// });
-
 
 var server = app.listen(process.argv[2] || 3000, function() {
     var port = server.address().port;

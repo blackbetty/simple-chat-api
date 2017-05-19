@@ -1,35 +1,37 @@
 var expect = require('expect.js');
-var request = require('supertest');
+let chai = require('chai');
+let chaiHttp = require('chai-http');
+let should = chai.should();
 
 
-describe('test routes', function() {
+chai.use(chaiHttp);
 
-    var server;
-    beforeEach(function() {
-        server = require('../app.js');
-    });
-    afterEach(function() {
-        server.close();
-    });
+var server = require('../app.js');
 
-
-    it('GET / returns list of routes', function testBase(done) {
-        var routes = request(server)
+// For now we will only test certain GET calls
+describe('test / and server', function() {
+    it('GET / returns an array', function testBase(done) {
+        chai.request(server)
             .get('/')
-            .expect(200, function() {
-                // console.log('Response:\n' + this.response.res.text);
+            .end((err, res) => {
+                res.should.have.status(200);
+                res.body.should.be.a('array');
+                res.body.length.should.be.not.eql(0);
                 done();
             });
-
     });
+});
 
-    it('GET /users returns list of routes', function testListUsers(done) {
-        var routes = request(server)
-            .get('/')
-            .expect(200, function() {
-                // console.log('Response:\n' + this.response.res.text);
+
+describe('test user routes', function() {
+    it('GET / returns an array', function testBase(done) {
+        chai.request(server)
+            .get('/users/')
+            .end((err, res) => {
+                res.should.have.status(200);
+                res.body.should.be.a('array');
+                res.body.length.should.be.not.eql(0);
                 done();
             });
-
     });
 });

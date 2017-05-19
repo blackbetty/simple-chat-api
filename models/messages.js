@@ -10,24 +10,23 @@ module.exports = function(sequelize, DataTypes) {
     },
     conversation_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     sender_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     recipient_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     message_body: {
       type: DataTypes.TEXT,
-      allowNull: true
+      allowNull: false
     },
     created_date: {
       type: DataTypes.TIME,
-      allowNull: true,
-      defaultValue: 'timezone(utc'
+      allowNull: true
     }
   }, {
     tableName: 'messages',

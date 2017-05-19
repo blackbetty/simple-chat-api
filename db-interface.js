@@ -14,6 +14,8 @@ var testDBConnection = function() {
         })
         .catch(err => {
             console.error('Unable to connect to the database:', err);
+            console.error('Please make sure that a database server is running at the correct path and you have permissions.');
+            process.exit(1);
         });
 }
 
@@ -21,16 +23,6 @@ var testDBConnection = function() {
 const User = sequelize.import(__dirname + "/models/users.js");
 const Conversation = sequelize.import(__dirname + "/models/conversations.js");
 const Message = sequelize.import(__dirname + "/models/messages.js");
-
-// If a query comes back null, we replace the result with a message saying so
-// function replaceNullResult(queryResult) {
-//     var finalResult; // = queryResult ? queryResult : 'no record was found for that value of the given parameter';
-
-//     if ((typeof(queryResult) === 'undefined') || queryResult.length === 0) {
-//         finalResult = 'no record was found for the values of the given parameter(s)';
-//     }
-//     return finalResult;
-// }
 
 
 var dbInterface = {
@@ -115,29 +107,41 @@ var dbInterface = {
         }).then(upsertedOrError => {
             // if the record is created, upsertedOrError == true, if it's updated upsertedOrError == false
             // so we just return the new state of the record
-            if (!(upsertedOrError instanceof Error)) {
-                callback(conversationObject);
-            } else {
-                callback({
-                    Error: 'Database upsert failed with error: ' + upsertedOrError,
-                    status: 500
-                });
-            }
-
+            callback(conversationObject);
+        }).catch(function(err) {
+            callback({
+                Error: 'Database upsert failed with error: ' + err,
+                status: 500
+            });
         });
     },
-   	fetchMessagesForConversation: function(userID, conversationID, messageID, callback) {
+    fetchMessagesForConversation: function(userID, conversationID, messageID, callback) {
 
         // If the messageID is provided we included it in the SQL Query Criteria,
         // otherwise we leave it blank
         var criteria = {
-        	'conversation_id':conversationID
+            'conversation_id': conversationID
         };
         if (messageID) {
             criteria['message_id'] = messageID
         }
-        Message.findAll({where: criteria}).then(conversations => {
+        Message.findAll({ where: criteria }).then(conversations => {
             callback(conversations);
+        });
+    },
+    createMessageForConversation: function(conversationID, senderID, recipientID, messageBody, callback) {
+        Message.create({
+            conversation_id: conversationID,
+            sender_id: senderID,
+            recipient_id: recipientID,
+            message_body: messageBody
+        }).then(message => {
+            callback(message);
+        }).catch(function(err) {
+            callback({
+                Error: 'Message creation failed with error: ' + err,
+                status: 500
+            });
         });
     }
 }
