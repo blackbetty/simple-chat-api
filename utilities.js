@@ -1,3 +1,4 @@
+require('dotenv').config();
 var dbInterface = require('./db-interface');
 
 var utilities = {

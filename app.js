@@ -1,7 +1,8 @@
 const express = require('express');
 const app = express();
-var bodyParser = require('body-parser');
+require('dotenv').config();
 
+var bodyParser = require('body-parser');
 var dbInterface = require('./db-interface');
 var listEndpoints = require('express-list-endpoints');
 var emailValidator = require('email-validator');
@@ -265,7 +266,7 @@ app.post('/users/:userid/conversations/:conversationid/messages/', function(req,
     })
 });
 
-var server = app.listen(process.argv[2] || 3000, function() {
+var server = app.listen(process.env.SERVER_PORT || process.argv[2] || 3000, function() {
     var port = server.address().port;
     console.log('chat api listening on port ' + port);
 })

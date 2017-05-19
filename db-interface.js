@@ -1,3 +1,4 @@
+require('dotenv').config();
 const pg = require('pg');
 const path = require('path');
 const Sequelize = require('Sequelize');

@@ -2,7 +2,7 @@
 
 
 SETUP:
-install Postgres and create a database called "chatdb" at port 5432 (or define your own in a .env file in the root directory)
+install Postgres and create a database called "chatdb" at port 5432 (or define your own in a .env file in the root directory, you can also define an alternate SERVER_PORT)
 
 npm install
 
