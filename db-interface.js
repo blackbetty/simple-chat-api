@@ -38,7 +38,7 @@ var dbInterface = {
                 // for consistency we return an array despite
                 // this call returning a single record by id
                 var users = [];
-                users.push(user);
+                if (user != null) users.push(user);
                 callback(users);
             }).catch(function(err) {
                 callback({

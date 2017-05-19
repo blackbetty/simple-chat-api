@@ -4,9 +4,13 @@ var bodyParser = require('body-parser');
 
 var dbInterface = require('./db-interface');
 var listEndpoints = require('express-list-endpoints');
-var emailValidator = require("email-validator");
+var emailValidator = require('email-validator');
+var helperUtilities = require('./utilities');
 
 app.use(bodyParser.json());
+
+
+
 
 
 
@@ -17,11 +21,11 @@ app.get('/', function(req, res) {
 })
 
 
-/****************************
- *                           *
- *		USER ROUTES 		*
- *                           *
- *****************************/
+/********************************
+ *                          	*
+ *			USER ROUTES 		*
+ *                           	*
+ ********************************/
 
 
 // Fetch all users, or specify a query of username, userid, or useremail
@@ -143,20 +147,33 @@ app.post('/users/:userid/conversations/', function(req, res) {
         return;
     }
 
-    conversationObject = {
-        initiatingUserID: req.params.userid,
-        receivingUserID: req.body.receivingUserID,
-        conversationTitle: req.body.conversationTitle
-    }
 
-    dbInterface.createConversation(conversationObject, function(returnedConversation) {
-            res.json(returnedConversation);
+    // Check that these users exist
+    helperUtilities.checkTwoUsersExist(req.params.userid, req.body.receivingUserID, function(existenceVal) {
+        if (!existenceVal) {
+            res.status(400).send('Both Users must exist');
+            return;
+        } else {
+            conversationObject = {
+                initiatingUserID: req.params.userid,
+                receivingUserID: req.body.receivingUserID,
+                conversationTitle: req.body.conversationTitle
+            }
+
+            dbInterface.createConversation(conversationObject, function(returnedConversation) {
+                res.json(returnedConversation);
+            });
+        }
     });
 });
 
+/************************************
+ *									*
+ *			MESSAGE ROUTES 			*
+ *                           		*
+ *************************************/
 
-
-// Fetch message by conversation + message ID, or all messages on the conversation
+// Fetch message by user, conversation, and message ID, or all messages on the conversation
 app.get('/users/:userid/conversations/:conversationid/messages/:messageid?', function(req, res) {
 
     var uID = req.params.userid;
@@ -169,11 +186,7 @@ app.get('/users/:userid/conversations/:conversationid/messages/:messageid?', fun
     }
 
     dbInterface.fetchMessagesForConversation(uID, cID, mID, function(returnedConversations) {
-        if (!(returnedConversations instanceof Error)) {
-            res.json(returnedConversations);
-        } else {
-            res.status(400).send('Bad Request');
-        }
+        res.json(returnedConversations);
     });
 });
 
@@ -272,5 +285,6 @@ module.exports = server;
 //      of a thread and store conservations as an gestalt object rather than message by message in order to allow for both quick single message lookup by id/text *and* allow for fetching a conservation completely rather than row by row.
 // Extra todos:
 //     X Validate email.
-//      vALIDATE POSTS to prevent users from starting conversations with themselves
+//     X vALIDATE POSTS to prevent users from starting conversations with themselves
 //      validate POSTS to prevent users from messagin themselves
+//		users must exist in order to create conversations
