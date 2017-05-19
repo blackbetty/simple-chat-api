@@ -66,7 +66,15 @@ Messages:
 GET <host>:<port>/users/<userid>/conversations/<conversationid>/messages/<messageid>
 	Fetches all messages for the given conversationID
 	or fetch a specific message by ID
-
+POST <host>:<port>/users/<userid>/conversations/<conversationid>/messages/
+	Creates a message sent from the given UserID on the given ConversationID, and requires a body of
+	```
+	{
+		"messageBody":"This is my part, nobody else speak"
+	}
+	```
+	Works with Emoji :)
+	Requires Users to exist and be a part of the given conversation
 todo:
 
 add a unique constraint to the username and user email columns

@@ -200,47 +200,66 @@ app.post('/users/:userid/conversations/:conversationid/messages/', function(req,
     var senderID;
 
     // All params need to be provided, along with a message
-    if (!uID || !cID || !messageBody) {
+    if (!uID || !cID || !messageBody || isNaN(uID) || isNaN(cID)) {
         res.status(400).send('Please be sure to include all query parameters and a message body, and that your encoding is set to JSON.');
         return;
     }
 
-    // All params must be numeric
-    if ((uID && isNaN(uID)) || (cID && isNaN(cID))) {
-        res.status(400).send('Please be sure all provided IDs are numeric');
-        return;
-    }
-
+    // Now that we know it exists we can set it
     senderID = uID;
 
     // fetch the conversation this message will be created for
     dbInterface.fetchConversationsForUser(uID, cID, function(returnedConversationsCollection) {
         // The user who will recieve the message
-        var returnedConversation = returnedConversationsCollection[0];
         var recipientID;
+        var validToProceed = true;
+        var messageUserValidationErrorMessage;
+        var returnedConversation = returnedConversationsCollection[0];
 
-        var userIsConversationInitiator = returnedConversation.dataValues.initiating_user_id == uID
-        var userIsConversationReceiver = returnedConversation.dataValues.receiving_user_id == uID
-            // We set the receiving_user_id to the other user
-        if (userIsConversationInitiator && userIsConversationReceiver) {
-            res.status(400).send('Users cannot send messages to themselves.');
-            return;
-        } else if (!userIsConversationInitiator && !userIsConversationReceiver) {
-            res.status(400).send('User must be part of conversation.');
-            return;
-        } else if (userIsConversationInitiator) {
-            recipientID = returnedConversation.dataValues.receiving_user_id;
-        } else if (userIsConversationReceiver) {
-            recipientID = returnedConversation.dataValues.initiating_user_id;
+        if (returnedConversation) {
+            var userIsConversationInitiator = returnedConversation.dataValues.initiating_user_id == uID
+            var userIsConversationReceiver = returnedConversation.dataValues.receiving_user_id == uID
         } else {
-            res.status(400).send('Unknown error');
+        	// The user is not valid on this conversation
+            var validToProceed = false;
+            messageUserValidationErrorMessage = 'User must be part of conversation.';
+        }
+
+
+        // We set the receiving_user_id to the other user
+        if (validToProceed) {
+            if (userIsConversationInitiator && userIsConversationReceiver) {
+                validToProceed = false;
+                messageUserValidationErrorMessage = 'Users cannot send messages to themselves.';
+            } else if (!userIsConversationInitiator && !userIsConversationReceiver) {
+                validToProceed = false;
+                messageUserValidationErrorMessage = 'User must be part of conversation.';
+            } else if (userIsConversationInitiator) {
+                recipientID = returnedConversation.dataValues.receiving_user_id;
+            } else if (userIsConversationReceiver) {
+                recipientID = returnedConversation.dataValues.initiating_user_id;
+            } else {
+                validToProceed = false;
+                messageUserValidationErrorMessage = 'Unknown error';
+            }
+        }
+        // That's a long name and an annoying conditional,
+        // but essentially if this value is false we have bad data
+        if (!validToProceed) {
+            res.status(400).send(messageUserValidationErrorMessage);
             return;
         }
-        dbInterface.createMessageForConversation(cID, senderID, recipientID, messageBody, function(returnedObject) {
-            if (returnedObject) {
-                res.json(returnedObject);
+
+        // Check that both users exist now that we know they're not the same one
+        // (Limit database calls)
+        helperUtilities.checkTwoUsersExist(senderID, recipientID, function(existenceVal) {
+            if (!existenceVal) {
+                res.status(400).send('Both Users must exist');
+                return;
             } else {
-                res.status(400).send('Bad Request');
+                dbInterface.createMessageForConversation(cID, senderID, recipientID, messageBody, function(returnedObject) {
+                    res.json(returnedObject);
+                });
             }
         });
     })

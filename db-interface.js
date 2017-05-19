@@ -147,15 +147,22 @@ var dbInterface = {
         if (messageID) {
             criteria['message_id'] = messageID
         }
-        Message.findAll({ where: Sequelize.and(
+        Message.findAll({
+            where: Sequelize.and(
                 criteria,
                 Sequelize.or({
                     sender_id: userID
                 }, {
                     recipient_id: userID
                 })
-            ) }).then(conversations => {
+            )
+        }).then(conversations => {
             callback(conversations);
+        }).catch(function(err) {
+            callback({
+                Error: 'Message fetch failed with error: ' + err,
+                status: 500
+            });
         });
     },
     createMessageForConversation: function(conversationID, senderID, recipientID, messageBody, callback) {
