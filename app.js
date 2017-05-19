@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 var bodyParser = require('body-parser');
 
-var responseBuilder = require('./response-builder');
 var dbInterface = require('./db-interface');
 var listEndpoints = require('express-list-endpoints');
 var emailValidator = require("email-validator");
