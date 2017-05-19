@@ -8,7 +8,6 @@ var utilities = {
                 dbInterface.fetchUsers('user_id', uID2, function(returnedUsers2) {
                 	console.log(returnedUsers2);
                     if (returnedUsers2.length != 0) {
-                    	console.log('hello')
                         cb(true);
                     } else {
                         cb(false);
@@ -18,6 +17,10 @@ var utilities = {
                 cb(false);
             }
         });
+    },
+    checkIDsForEquality: function(){
+
+
     }
 };
 
