@@ -78,7 +78,8 @@
 	* Works with Emoji :)
 	> Note: Requires users to exist before posting the message and be a part of the given conversation
 # TODO:
-
+   * More test coverage
+   * In order to have better test coverage, need to add mocked/test db
    * Add a unique constraint to the user_handle and user_email columns so that only 1 user can be created per username
    * Allow users to update conversation topics and possibly recipients (maybe 1:many messaging)
    * Delete conversation from a single user's view (may be out of scope)
