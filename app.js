@@ -9,13 +9,23 @@ var emailValidator = require("email-validator");
 
 app.use(bodyParser.json());
 
-// Route definitions and methods
+
+
+// Fetch all routes and methods
 app.get('/', function(req, res) {
     var endpoints = listEndpoints(app);
     res.send(endpoints);
 })
 
-//fetch all users, or specify a query of username, userid, or useremail
+
+/****************************
+ *                           *
+ *		USER ROUTES 		*
+ *                           *
+ *****************************/
+
+
+// Fetch all users, or specify a query of username, userid, or useremail
 app.get('/users/:id?', function(req, res) {
     var uName = req.query.username;
     var uEmail = req.query.useremail;
@@ -33,23 +43,22 @@ app.get('/users/:id?', function(req, res) {
             field = 'user_email';
             value = uEmail;
         }
+    } else if (req.params.id && isNaN(req.params.id)) {
+        field = 'user_id';
+        value = null;
     } else {
         field = 'user_id';
         value = req.params.id;
     }
 
     dbInterface.fetchUsers(field, value, function(returnedUsers) {
-        if (!(returnedUsers instanceof Error)) {
-            res.json(returnedUsers);
-        } else {
-            res.status(400).send('Bad Request');
-        }
+        res.json(returnedUsers);
     });
 
 })
 
-// Creates a user or updates the user for the given username (currently username cannot be updated)
-// Returns the new state of the user
+// Create a user or update the user for the given username (currently username cannot be updated)
+// and Return the new state of the user
 app.post('/users/', function(req, res) {
 
     // The object we'll use to create our user
@@ -80,7 +89,7 @@ app.post('/users/', function(req, res) {
     });
 })
 
-// delete a user by userID
+// Delete a user by userID and return the number of users deleted (1)
 app.delete('/users/:id(\\d+)/', function(req, res) {
     var uID = req.params.id;
     if (!req.params || !req.params.id) {
@@ -96,47 +105,53 @@ app.delete('/users/:id(\\d+)/', function(req, res) {
 });
 
 
-//fetch all conversations for the given user, or a specific conversation for the given conversation id
+/************************************
+ *									*
+ *		CONVERSATION ROUTES 		*
+ *                           		*
+ *************************************/
+
+
+// Fetch all conversations for the given user
+// or a specific conversation by ID
 app.get('/users/:userid/conversations/:conversationid?', function(req, res) {
     var conversationID = req.params.conversationid;
     var uID = req.params.userid;
 
     if ((uID && isNaN(uID)) || (conversationID && isNaN(conversationID))) {
-        res.status(400).send('Please be sure both provided IDs are numeric');
+        res.status(400).send('Please be sure both IDs are provided and are numeric');
         return;
     }
     dbInterface.fetchConversationsForUser(uID, conversationID, function(returnedConversations) {
-        if (!(returnedConversations instanceof Error)) {
-            res.json(returnedConversations);
-        } else {
-            res.status(400).send('Bad Request');
-        }
+        res.json(returnedConversations);
     });
 })
 
 // Create a conversation between two users
 app.post('/users/:userid/conversations/', function(req, res) {
 
-    if (!req.body || !req.body.receivingUserID || !req.params.userid) {
-        res.status(400).send('Please provide a userID parameter and a body that includes the receivingUserID');
+    var conversationObject;
+
+    // If a user or recipient is not defined or an integer, we let the user know
+    if (!req.body || !req.body.receivingUserID || !req.params.userid || (isNaN(req.body.receivingUserID) || isNaN(req.params.userid))) {
+        res.status(400).send('Please provide a numeric userID parameter and a body that includes a \"receivingUserID\"');
         return;
     }
-    var uID = req.params.userid;
-    var conversationObject = {
-        initiatingUserID: uID,
+
+    // Users may not create conversations with themselves
+    if (req.params.userid == req.body.receivingUserID) {
+        res.status(400).send('Users cannot create conversations with themselves');
+        return;
+    }
+
+    conversationObject = {
+        initiatingUserID: req.params.userid,
         receivingUserID: req.body.receivingUserID,
         conversationTitle: req.body.conversationTitle
     }
-    if (uID && isNaN(uID)) {
-        res.status(400).send('Please be sure the provided userID is numeric');
-        return;
-    }
+
     dbInterface.createConversation(conversationObject, function(returnedConversation) {
-        if (!(returnedConversation instanceof Error)) {
             res.json(returnedConversation);
-        } else {
-            res.status(400).send('Bad Request');
-        }
     });
 });
 
@@ -257,6 +272,6 @@ module.exports = server;
 // I think I might also implement a "Entire conversation table" where each row is the entire history
 //      of a thread and store conservations as an gestalt object rather than message by message in order to allow for both quick single message lookup by id/text *and* allow for fetching a conservation completely rather than row by row.
 // Extra todos:
-//      Validate email.
+//     X Validate email.
 //      vALIDATE POSTS to prevent users from starting conversations with themselves
 //      validate POSTS to prevent users from messagin themselves

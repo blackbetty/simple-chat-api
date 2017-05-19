@@ -35,3 +35,28 @@ describe('test user routes', function() {
             });
     });
 });
+
+
+describe('test conversation routes', function() {
+
+    it('GET conversation by invalid user ID 400s', function testBase(done) {
+        chai.request(server)
+            .get('/users/sha/conversations/1')
+            .end((err, res) => {
+                res.should.have.status(400);
+                res.body.should.be.a('Object');
+                done();
+            });
+    });
+
+    it('GET conversation by invalid conversation id 400s', function testBase(done) {
+        chai.request(server)
+            .get('/users/1/conversations/sha')
+            .end((err, res) => {
+                res.should.have.status(400);
+                res.body.should.be.a('Object');
+                done();
+            });
+    });
+});
+

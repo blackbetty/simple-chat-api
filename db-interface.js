@@ -42,13 +42,18 @@ var dbInterface = {
                 callback(users);
             }).catch(function(err) {
                 callback({
-                    Error: 'Database upsert failed with error: ' + err,
+                    Error: 'Fetch users failed with error: ' + err,
                     status: 500
                 });
             });
         } else {
             User.findAll().then(users => {
                 callback(users);
+            }).catch(function(err) {
+                callback({
+                    Error: 'Fetch users failed with error: ' + err,
+                    status: 500
+                });
             });
         }
     },
@@ -85,13 +90,16 @@ var dbInterface = {
             callback(numberOfUsersDeleted);
         }).catch(function(err) {
             callback({
-                Error: 'User upsert failed with error: ' + err,
+                Error: 'User delete failed with error: ' + err,
                 status: 500
             });
         });
     },
     fetchConversationsForUser: function(userID, conversationID, callback) {
         var criteria = {};
+
+        // If we don't pass a ConversationID we just fetch all conversations
+        // a user is part of
         if (conversationID) {
             criteria['conversation_id'] = conversationID
         }
@@ -106,22 +114,25 @@ var dbInterface = {
             )
         }).then(conversations => {
             callback(conversations);
+        }).catch(function(err) {
+            callback({
+                Error: 'Fetch conversations failed with error: ' + err,
+                status: 500
+            });
         });
     },
-    // Since Users and Conversations function slightly differently,
+    // Since the Users and Conversations tables function slightly differently,
     // it's simpler to keep conversation create and update as separate functions
     createConversation: function(conversationObject, callback) {
         Conversation.upsert({
             initiating_user_id: conversationObject.initiatingUserID,
             receiving_user_id: conversationObject.receivingUserID,
             conversation_title: conversationObject.conversationTitle
-        }).then(upsertedOrError => {
-            // if the record is created, upsertedOrError == true, if it's updated upsertedOrError == false
-            // so we just return the new state of the record
+        }).then(created => {
             callback(conversationObject);
         }).catch(function(err) {
             callback({
-                Error: 'Database upsert failed with error: ' + err,
+                Error: 'Conversation creation failed with error: ' + err,
                 status: 500
             });
         });
